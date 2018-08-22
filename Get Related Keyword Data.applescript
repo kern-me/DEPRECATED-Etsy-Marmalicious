@@ -125,10 +125,17 @@ on writeTextToFile(theText, theFile, overwriteExistingContent)
 end writeTextToFile
 
 -- Write to file
+
 on writeFile(theContent, writable)
+	set now to current date
+	set mo to (month of now as string)
+	set addDaytoYear to (year of now) * 100 + (day of now) as string
+	set d to text -2 thru -1 of addDaytoYear
+	set e to text 1 thru 3 of mo
+	set f to text -6 thru -3 of addDaytoYear
 	set keyword to firstKeyword
 	set this_Story to theContent
-	set theFile to (((path to desktop folder) as string) & keyword & ".csv")
+	set theFile to (((path to desktop folder) as string) & keyword & "_" & e & d & "_" & f & ".csv")
 	writeTextToFile(this_Story, theFile, writable)
 end writeFile
 
@@ -381,9 +388,9 @@ end primaryRoutine
 
 
 -- Routines
-primaryRoutine()
+#primaryRoutine()
 #getEtsyData()
-#checkResultsOfUserKeyword()
+checkResultsOfUserKeyword()
 
 
 

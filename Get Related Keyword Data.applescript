@@ -388,11 +388,12 @@ end primaryRoutine
 
 
 -- Routine Checks
-#primaryRoutine()
 #checkResultsOfUserKeyword()
+#getEtsyData()
 
 -- Main Routine
-getEtsyData()
+primaryRoutine()
+
 
 
 

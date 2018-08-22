@@ -387,10 +387,12 @@ on primaryRoutine()
 end primaryRoutine
 
 
--- Routines
+-- Routine Checks
 #primaryRoutine()
-#getEtsyData()
-checkResultsOfUserKeyword()
+#checkResultsOfUserKeyword()
+
+-- Main Routine
+getEtsyData()
 
 
 

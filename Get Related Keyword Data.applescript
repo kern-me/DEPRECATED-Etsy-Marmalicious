@@ -230,7 +230,7 @@ end getEtsyData
 
 -- Check if the browser is loaded
 on checkIfLoaded()
-	set browserTimeoutValue to 60
+	set browserTimeoutValue to 300
 	
 	tell application "Safari"
 		repeat with i from 1 to the browserTimeoutValue
@@ -239,14 +239,14 @@ on checkIfLoaded()
 				set checkLoading to (do JavaScript "document.getElementById('loading').style.display;" in document 1)
 				set loggedOut to (do JavaScript "document.getElementById('loError').style.display;" in document 1)
 				delay dv
-				
-				if checkLoading is "none" then
-					return true
-				else if i is the browserTimeoutValue then
-					return false
-				else
-					log "Loading..."
+				try
+					if checkLoading is "none" then
+						return true
+						log "Loading..."
 				end if
+				on error
+					return false
+					end try
 			end tell
 		end repeat
 	end tell
@@ -336,8 +336,40 @@ on getWordCloudFromDOM()
 	return theList as list
 end getWordCloudFromDOM
 
+-- Read line from file
+on makeKeywordList()
+	set theList to {}
+	set theKeywords to paragraphs of (read POSIX file "/Users/nicokillips/Desktop/keyword-list.txt")
+	repeat with nextLine in theKeywords
+		if length of nextLine is greater than 0 then
+			copy nextLine to the end of theList
+		end if
+	end repeat
+	return theList
+end makeKeywordList
 
--- Process all the Related Keywords
+-- Process all the words from the existing text file
+on processTextFile()
+	set theList to makeKeywordList()
+	
+	repeat with a from 1 to length of theList
+		set theCurrentListItem to item a of theList
+		set theCurrentSearch to setSearchInput("q", theCurrentListItem)
+		
+		checkIfLoaded()
+		
+		try
+			set rowData to writeFile(newLine & getEtsyData(), false)
+		on error
+			exit repeat
+		end try
+		
+	end repeat
+	return
+end processTextFile
+
+
+-- Process all the words from the Word Cloud (Related Keywords)
 on processWordCloud()
 	set theList to getWordCloudFromDOM()
 	
@@ -392,7 +424,8 @@ end primaryRoutine
 #getEtsyData()
 
 -- Main Routine
-primaryRoutine()
+#primaryRoutine()
+processTextFile()
 
 
 

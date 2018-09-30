@@ -1,3 +1,13 @@
+###################
+# LOAD SCRIPT
+###################
+on load_script(_scriptName)
+	tell application "Finder"
+		set _myPath to container of (path to me) as string
+		set _loadPath to (_myPath & _scriptName) as string
+		load script (alias _loadPath)
+	end tell
+end load_script
 
 set AppleScript's text item delimiters to ","
 
@@ -11,346 +21,98 @@ property scoreBargainPrice : "minPrice"
 property scoreMidrangePrice : "avgPrice"
 property scorePremiumPrice : "maxPrice"
 
-property dv : 0.25
 property browserTimeoutValue : 60
 
-property repeatCount2 : -1
-
-property firstKeyword : ""
-
-property safari : "Safari"
-
-property currentKeyword : ""
-
-property badKeywordCount : 0
-property lowEngagementCount : 0
-property lowSearchesCount : 0
-property highCompetitionCount : 0
-
-property byId : "getElementById"
-property byClassName : "getElementsByClassName"
-property byTagName : "getElementsByTagName"
-property byName : "getElementsByName"
-property innerHTML : "innerHTML"
-property innerText : "innerText"
-property value : "value"
-property stripCommas : "replace(',','')"
-property stripK : "replace('k','000')"
-property splitDashes : "split(' - ',1)"
-
 property threshold : ""
-property searchesMin : 0
-property engagementMin : 0
-property competitionMax : 0
 
 property rowHeaders : "Keyword,Searches,Engagement,Competition,Shops Competing,Average Renewal,Bargain Price,Midrange Price,Premium Price"
 
 property newLine : "
 "
 
+#################################
+# Boolean Checks
+on _check(_parent, _child)
+	set _script to load_script("_check.scpt")
+	tell _script to set a to _check(_parent, _child)
+	return a
+end _check
+
+#################################
+# Data Handlers
+on _getData(_scriptName)
+	set _script to load_script(_scriptName)
+	set a to run _script
+	return a
+end _getData
 
 
-##
-## USER INPUTS
-##
-
--- User prompt
-on userPrompt(theText, buttonText1, buttonText2, type)
-	if type = 1 then
-		display dialog theText
-	else
-		display dialog theText buttons {buttonText1, buttonText2}
-	end if
-end userPrompt
-
-on userPrompt3(theText, buttonText1, buttonText2, buttonText3)
-	display dialog theText buttons {buttonText1, buttonText2, buttonText3}
-end userPrompt3
-
-
--- Ask the user for threshold setting
-on getThreshold()
-	activate
-	set choice1 to "low"
-	set choice2 to "medium"
-	set choice3 to "high"
+#################################
+on checkFlags()
+	# Check if long tail
+	set flag_a to _check("#kwType > div", "span")
 	
-	set threshold to button returned of userPrompt3("Choose your keyword threshold", choice1, choice2, choice3) as text
+	# Check if searches is at least 'good'
+	set flag_b to _check("#mm-search-bars", "div")
 	
-	return
-end getThreshold
-
-
--- Prompt for keyword
-on userKeyword()
-	set theKeyword to display dialog "Enter a keyword" default answer ""
-	set keyword to text returned of theKeyword as text
-	set firstKeyword to keyword
-	return keyword as text
-end userKeyword
-
-
--- Find the Marmalead search bar in the DOM and insert the search term
-on setSearchInput(theId, keyword)
-	tell application "Safari"
-		do JavaScript "document.getElementById('" & theId & "').value ='" & keyword & "'; doSearch();" in document 1
-		delay dv
-	end tell
-end setSearchInput
-
-
-
-##
-## FILE READING AND WRITING
-##
-
--- Reading and Writing Params
-on writeTextToFile(theText, theFile, overwriteExistingContent)
-	try
-		set theFile to theFile as string
-		set theOpenedFile to open for access file theFile with write permission
-		
-		if overwriteExistingContent is true then set eof of theOpenedFile to 0
-		write theText to theOpenedFile starting at eof
-		close access theOpenedFile
-		
-		return true
-	on error
-		try
-			close access file theFile
-		end try
-		
+	# Check if engagement is at least 'good'
+	set flag_c to _check("#mm-eng-bars", "div")
+	
+	# Check if competition is at least 'goog'
+	set flag_d to _check("#mm-comp-bars", "div")
+	
+	set flags to {flag_a, flag_b, flag_c, flag_d}
+	
+	if flags contains false then
 		return false
-	end try
-end writeTextToFile
+	else
+		return true
+	end if
+end checkFlags
 
--- Write to file
+#################################
 
-on writeFile(theContent, writable)
-	set now to current date
-	set mo to (month of now as string)
-	set addDaytoYear to (year of now) * 100 + (day of now) as string
-	set d to text -2 thru -1 of addDaytoYear
-	set e to text 1 thru 3 of mo
-	set f to text -6 thru -3 of addDaytoYear
-	set keyword to firstKeyword
-	set this_Story to theContent
-	set theFile to (((path to desktop folder) as string) & keyword & "_" & e & d & "_" & f & ".csv")
-	writeTextToFile(this_Story, theFile, writable)
-end writeFile
-
-
-##
-## GETTING DATA FROM THE DOM
-##
-
--- Get the tag/keyword from the DOM
-on getTagName()
-	tell application "Safari"
-		set input to do JavaScript "document." & byName & "('q')[0]." & value & ";" in document 1
-		return input
-	end tell
-end getTagName
-
--- Get the stats from the DOM
-on getStat(firstMethod, selector, secondMethod, doSplit)
-	tell application "Safari"
-		if doSplit = 0 then
-			set input to do JavaScript "document." & firstMethod & "('" & selector & "')." & secondMethod & "." & stripCommas & ";" in document 1
-			return input
-		else if doSplit = 1 then
-			set input to do JavaScript "document." & firstMethod & "('" & selector & "')." & secondMethod & "." & stripCommas & "." & stripK & "." & splitDashes & ";" in document 1
-		end if
-		return input
-	end tell
-end getStat
-
+on getDomData()
+	set tagName to _getData("getTagName.scpt")
+	set longTail to _check("#kwType > div", "span")
+	set searches to _getData("getSearches.scpt")
+	set engagement to _getData("getEngagement.scpt")
+	set competition to _getData("getCompetition.scpt")
+	set shops to _getData("getTotalShops.scpt")
+	set minPrice to _getData("getMinPrice.scpt")
+	set avgPrice to _getData("getAvgPrice.scpt")
+	set maxPrice to _getData("getMaxPrice.scpt")
+	
+	set theList to {tagName, longTail, searches, engagement, competition, shops, minPrice, avgPrice, maxPrice}
+	
+	return theList
+end getDomData
 
 -- Get Etsy Stats from the DOM
 on getEtsyData()
-	set tagName to getTagName()
+	#Prompt User for threshold setting
+	set threshold to _getData("ui_getThreshold.scpt")
 	
 	if threshold is "high" then
-		set searchesMin to 300
-		set engagementMin to 500
-		#set competitionMax to 25000
-	else if threshold is "medium" then
-		set searchesMin to 100
-		set engagementMin to 300
-		#set competitionMax to 50000
-	else if threshold is "low" then
-		set searchesMin to 0
-		set engagementMin to 0
-		#set competitionMax to 50000
+		set thresholdFlag to checkFlags()
+		
+		if thresholdFlag is true then
+			set theData to getDomData()
+		else
+			return
+		end if
 	end if
 	
-	set searches to getStat(byId, "sumSearch", innerText, 1) as number
-	
-	if searches is less than searchesMin then
-		set dataList to "" as text
-		set badKeywordCount to badKeywordCount + 1
-		set lowSearchesCount to lowSearchesCount + 1
-		return dataList
-	end if
-	
-	set engagement to getStat(byId, "sumEngagement", innerText, 1) as number
-	
-	if engagement is less than engagementMin then
-		set dataList to "" as text
-		set badKeywordCount to badKeywordCount + 1
-		set lowEngagementCount to lowEngagementCount + 1
-		return dataList
-	end if
-	
-	
-	set Competition to getStat(byId, "sumCompetition", innerText, 1)
-	(*	
-	if Competition is greater than competitionMax then
-		set dataList to "" as text
-		set badKeywordCount to badKeywordCount + 1
-		set highCompetitionCount to highCompetitionCount + 1
-		return dataList
-	end if
-	*)
-	set Competing to getStat(byId, "totShops", innerText, 0)
-	set AvgRenewal to getStat(byId, "avgRenewal", innerText, 0)
-	set BargainPrice to getStat(byId, "minPrice", innerText, 0)
-	set MidrangePrice to getStat(byId, "avgPrice", innerText, 0)
-	set maxPrice to getStat(byId, "maxPrice", innerText, 0)
-	set dataList to {tagName, searches, engagement, Competition, Competing, AvgRenewal, BargainPrice, MidrangePrice, maxPrice} as text
-	
-	return dataList
+	return theData
 end getEtsyData
 
+getEtsyData()
 
-
-##
-## CHECKS
-##
-
--- Check if the browser is loaded
-on checkIfLoaded()
-	set browserTimeoutValue to 300
-	
-	tell application "Safari"
-		repeat with i from 1 to the browserTimeoutValue
-			tell application "Safari"
-				delay dv
-				set checkLoading to (do JavaScript "document.getElementById('loading').style.display;" in document 1)
-				set loggedOut to (do JavaScript "document.getElementById('loError').style.display;" in document 1)
-				delay dv
-				try
-					if checkLoading is "none" then
-						return true
-						log "Loading..."
-				end if
-				on error
-					return false
-					end try
-			end tell
-		end repeat
-	end tell
-end checkIfLoaded
-
--- Check if the keyword is found
-on checkKeyword()
-	tell application "Safari"
-		delay dv
-		
-		set noResultsCheck to (do JavaScript "document.getElementById('noresults').style.display;" in document 1)
-		
-		if noResultsCheck is "none" then
-			return true
-		else
-			return false
-		end if
-		
-	end tell
-end checkKeyword
-
--- Check User Keyword Results
-on checkResultsOfUserKeyword()
-	repeat
-		set theKeyword to userKeyword() as text
-		
-		setSearchInput("q", theKeyword)
-		
-		checkIfLoaded()
-		
-		if checkKeyword() is false then
-			writeFile(rowHeaders & newLine & theKeyword & "," & "No Results Found.", false)
-		else
-			set row0 to writeFile(rowHeaders & newLine & getEtsyData(), false)
-			return row0
-		end if
-	end repeat
-end checkResultsOfUserKeyword
-
-
-
-##
-## RELATED KEYWORD AND WORD CLOUD EVENTS
-##
-
-
--- Get Word Cloud DOM element
-on getWordCloud(theInstance)
-	tell application "Safari"
-		try
-			set doJS to "document." & byId & "('word_cloud')." & byTagName & "('span')[" & theInstance & "]." & innerText & ""
-			set wordCloud to (do JavaScript doJS in document 1)
-			
-		on error
-			return false
-		end try
-		
-		return wordCloud
-	end tell
-end getWordCloud
-
-
--- Get every word cloud DOM element
-on getWordCloudFromDOM()
-	set theList to {}
-	
-	repeat
-		try
-			set updatedCount to (repeatCount2 + 1)
-			set theKeyword to getWordCloud(updatedCount)
-			
-			if theKeyword is false then
-				set repeatCount2 to -1
-				return false
-			end if
-			
-			set repeatCount2 to repeatCount2 + 1
-			
-			copy theKeyword to the end of the theList
-			
-		on error
-			set repeatCount2 to -1
-			exit repeat
-		end try
-	end repeat
-	
-	return theList as list
-end getWordCloudFromDOM
-
--- Read line from file
-on makeKeywordList()
-	set theList to {}
-	set theKeywords to paragraphs of (read POSIX file "/Users/nicokillips/Desktop/keyword-list.txt")
-	repeat with nextLine in theKeywords
-		if length of nextLine is greater than 0 then
-			copy nextLine to the end of theList
-		end if
-	end repeat
-	return theList
-end makeKeywordList
 
 -- Process all the words from the existing text file
 on processTextFile()
-	set theList to makeKeywordList()
+	set fileName to "/Users/nicokillips/dev/Etsy Products/Marmalead/base-keywords.txt"
+	set theList to paragraphs of (read POSIX file fileName)
 	
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
@@ -389,12 +151,6 @@ on processWordCloud()
 	return
 end processWordCloud
 
-
-
-##
-## MAIN ACTIONS AND CALLS
-##
-
 -- Main Actions
 on primaryRoutine()
 	set badKeywordCount to 0
@@ -403,7 +159,6 @@ on primaryRoutine()
 	
 	repeat
 		checkResultsOfUserKeyword()
-		
 		processWordCloud()
 		
 		if badKeywordCount is greater than 1 then
@@ -417,16 +172,3 @@ on primaryRoutine()
 		exit repeat
 	end repeat
 end primaryRoutine
-
-
--- Routine Checks
-#checkResultsOfUserKeyword()
-#getEtsyData()
-
--- Main Routine
-#primaryRoutine()
-processTextFile()
-
-
-
-

@@ -138,9 +138,16 @@ end processTextFile
 -- Process the current Word Cloud (Related Words)
 --------------------------------------------------------
 on processWordCloud(newFileName)
+	# Make a list out of the current word cloud
 	set theList to loop_iterate("querySelectorAll", "#word_cloud span", "innerText")
+	
+	# Load the input setting script for future use outside the loop
 	set c to load_script("do_setInput.scpt")
-	saveFile(rowHeaders & newLine, theNewFile) as string
+	
+	# Save the row headers
+	saveFile(rowHeaders & newLine, newFileName) as string
+	
+	# Start the LOOP
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
 		
@@ -150,8 +157,10 @@ on processWordCloud(newFileName)
 		# Wait for the page to load
 		_run("_check_loaded.scpt")
 		
+		# Get the Etsy Data
 		set theData to getData() as string
 		
+		# Write the Data to File
 		saveFile(theData & newLine, newFileName) as string
 	end repeat
 	return
@@ -160,5 +169,5 @@ end processWordCloud
 --------------------------------------------------------
 -- Calls
 --------------------------------------------------------
-processTextFile("base-keywords.txt", "base-keyword-data-results.csv", returnType)
+#processTextFile("base-keywords.txt", "base-keyword-data-results.csv", returnType)
 processWordCloud("word cloud results.csv")

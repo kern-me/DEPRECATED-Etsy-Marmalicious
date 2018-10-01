@@ -1,16 +1,15 @@
-----------------------------------
--- PROPERTIES
-----------------------------------
+--------------------------------------------------------
+-- Properties
+--------------------------------------------------------
 set AppleScript's text item delimiters to ","
 
 property rowHeaders : "Keyword,Longtail,Searches,Engagement,Competition,Shops Competing,Free Shipping %,Bargain Price,Midrange Price,Premium Price"
 
 property newLine : "\n"
 
-----------------------------------
--- GLOBAL HANDLERS
-----------------------------------
-
+--------------------------------------------------------
+-- Constructor Handlers
+--------------------------------------------------------
 -- Load Script
 on load_script(_scriptName)
 	tell application "Finder"
@@ -34,7 +33,6 @@ on _getData(_scriptName)
 	return a
 end _getData
 
-
 -- Run Single Script
 on _run(_scriptName)
 	set _script to load_script(_scriptName)
@@ -42,10 +40,21 @@ on _run(_scriptName)
 	return
 end _run
 
-----------------------------------
--- ROUTINES
-----------------------------------
--- Get Etsy Data from the DOM
+-- Get Loop Data
+on loop_iterate(a, b, c)
+	set _script to load_script("_loop.scpt")
+	tell _script to set theList to _loop_iterate(a, b, c)
+end loop_iterate
+
+-- Save File
+on saveFile(theContent, fileName)
+	set a to load_script("file_writeFile.scpt")
+	tell a to set theData to writeFile(theContent, false, fileName) as string
+end saveFile
+
+--------------------------------------------------------
+-- Get the Etsy data
+--------------------------------------------------------
 on getData()
 	set tagName to _getData("getTagName.scpt")
 	set longTail to _check("#kwType > div", "span")
@@ -63,8 +72,7 @@ on getData()
 	return theList
 end getData
 
-
--- Get Etsy Stats from the DOM
+-- Get High Quality Etsy Data
 on checkThreshold(a)
 	if a is true then
 		set b to getData()
@@ -72,28 +80,27 @@ on checkThreshold(a)
 	end if
 end checkThreshold
 
-on saveFile(theContent, fileName)
-	set a to load_script("file_writeFile.scpt")
-	tell a to set theData to writeFile(theContent, false, fileName) as string
-end saveFile
-
--- Process all the words from the existing text file
-# "base-keywords.txt"
-on processTextFile(theProcessFile, theNewFile, returnType)
+--------------------------------------------------------
+-- Process Data from Existing Text File
+--------------------------------------------------------
+on processTextFile(theProcessFile, theNewFile)
 	set b to load_script("file_path.scpt")
 	set c to load_script("do_setInput.scpt")
 	set d to load_script("file_writeFile.scpt")
 	set e to load_script("list_insert_item.scpt")
-	
-	set processedList to {}
+	#set processedList to {}
 	set AppleScript's text item delimiters to ","
 	
+	# Set the file path
 	tell b to set filePath to setFilePath(theProcessFile)
 	
+	# Set up the list by reading every paragraph line of the file
 	set theList to paragraphs of (read POSIX file filePath)
 	
+	# Save the header rows
 	saveFile(rowHeaders & newLine, theNewFile) as string
 	
+	# LOOP START
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
 		
@@ -103,6 +110,7 @@ on processTextFile(theProcessFile, theNewFile, returnType)
 		# Wait for the page to load
 		_run("_check_loaded.scpt")
 		
+		(*
 		if returnType is 1 then
 			set theData to getData() as string
 			saveFile(theData & newLine, theNewFile) as string
@@ -110,6 +118,13 @@ on processTextFile(theProcessFile, theNewFile, returnType)
 			set theData to getData()
 			tell e to insertItemInList(theData, processedList, 1)
 		end if
+		*)
+		
+		# Get the Etsy Data
+		set theData to getData() as string
+		
+		# Write the Data to file
+		saveFile(theData & newLine, theNewFile) as string
 	end repeat
 	
 	if returnType is 1 then
@@ -119,47 +134,31 @@ on processTextFile(theProcessFile, theNewFile, returnType)
 	end if
 end processTextFile
 
---
-processTextFile("base-keywords.txt", "results.csv", 1)
-
--- Process all the words from the Word Cloud (Related Keywords)
-on processWordCloud()
-	set theList to getWordCloudFromDOM()
-	
+--------------------------------------------------------
+-- Process the current Word Cloud (Related Words)
+--------------------------------------------------------
+on processWordCloud(newFileName)
+	set theList to loop_iterate("querySelectorAll", "#word_cloud span", "innerText")
+	set c to load_script("do_setInput.scpt")
+	saveFile(rowHeaders & newLine, theNewFile) as string
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
-		set theCurrentSearch to setSearchInput("q", theCurrentListItem)
 		
-		checkIfLoaded()
+		# Set the input to the current word line of the file and initiate the search
+		tell c to set theCurrentSearch to setSearchInput("q", theCurrentListItem)
 		
-		try
-			set rowData to writeFile(newLine & getEtsyData(), false)
-		on error
-			exit repeat
-		end try
+		# Wait for the page to load
+		_run("_check_loaded.scpt")
 		
+		set theData to getData() as string
+		
+		saveFile(theData & newLine, newFileName) as string
 	end repeat
 	return
 end processWordCloud
 
--- Main Actions
-on primaryRoutine()
-	set badKeywordCount to 0
-	
-	getThreshold()
-	
-	repeat
-		checkResultsOfUserKeyword()
-		processWordCloud()
-		
-		if badKeywordCount is greater than 1 then
-			set userMessage to "All done! There were " & badKeywordCount & " keywords that we left out since they had low scores."
-		else
-			set userMessage to "All done!"
-		end if
-		
-		userPrompt(userMessage, "", "", 1)
-		
-		exit repeat
-	end repeat
-end primaryRoutine
+--------------------------------------------------------
+-- Calls
+--------------------------------------------------------
+processTextFile("base-keywords.txt", "base-keyword-data-results.csv", returnType)
+processWordCloud("word cloud results.csv")

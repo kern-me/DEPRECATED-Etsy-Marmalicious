@@ -1,6 +1,17 @@
-###################
-# LOAD SCRIPT
-###################
+----------------------------------
+-- PROPERTIES
+----------------------------------
+set AppleScript's text item delimiters to ","
+
+property rowHeaders : "Keyword,Longtail,Searches,Engagement,Competition,Shops Competing,Free Shipping %,Bargain Price,Midrange Price,Premium Price"
+
+property newLine : "\n"
+
+----------------------------------
+-- GLOBAL HANDLERS
+----------------------------------
+
+-- Load Script
 on load_script(_scriptName)
 	tell application "Finder"
 		set _myPath to container of (path to me) as string
@@ -9,37 +20,14 @@ on load_script(_scriptName)
 	end tell
 end load_script
 
-set AppleScript's text item delimiters to ","
-
-property keyword : "q"
-property scoreEtsySearches : "sumSearch"
-property scoreEtsyEngagement : "sumEngagement"
-property scoreCompetition : "sumCompetition"
-property scoreCompeting : "totShops"
-property scoreAvgRenewal : "avgRenewal"
-property scoreBargainPrice : "minPrice"
-property scoreMidrangePrice : "avgPrice"
-property scorePremiumPrice : "maxPrice"
-
-property browserTimeoutValue : 60
-
-property threshold : ""
-
-property rowHeaders : "Keyword,Searches,Engagement,Competition,Shops Competing,Average Renewal,Bargain Price,Midrange Price,Premium Price"
-
-property newLine : "
-"
-
-#################################
-# Boolean Checks
+-- Boolean Checks
 on _check(_parent, _child)
 	set _script to load_script("_check.scpt")
 	tell _script to set a to _check(_parent, _child)
 	return a
 end _check
 
-#################################
-# Data Handlers
+-- Data Handlers
 on _getData(_scriptName)
 	set _script to load_script(_scriptName)
 	set a to run _script
@@ -47,89 +35,92 @@ on _getData(_scriptName)
 end _getData
 
 
-#################################
-on checkFlags()
-	# Check if long tail
-	set flag_a to _check("#kwType > div", "span")
-	
-	# Check if searches is at least 'good'
-	set flag_b to _check("#mm-search-bars", "div")
-	
-	# Check if engagement is at least 'good'
-	set flag_c to _check("#mm-eng-bars", "div")
-	
-	# Check if competition is at least 'goog'
-	set flag_d to _check("#mm-comp-bars", "div")
-	
-	set flags to {flag_a, flag_b, flag_c, flag_d}
-	
-	if flags contains false then
-		return false
-	else
-		return true
-	end if
-end checkFlags
+-- Run Single Script
+on _run(_scriptName)
+	set _script to load_script(_scriptName)
+	set a to run _script
+	return
+end _run
 
-#################################
-
-on getDomData()
+----------------------------------
+-- ROUTINES
+----------------------------------
+-- Get Etsy Data from the DOM
+on getData()
 	set tagName to _getData("getTagName.scpt")
 	set longTail to _check("#kwType > div", "span")
 	set searches to _getData("getSearches.scpt")
 	set engagement to _getData("getEngagement.scpt")
 	set competition to _getData("getCompetition.scpt")
 	set shops to _getData("getTotalShops.scpt")
+	set freeShipping to _getData("getFreeShipping.scpt")
 	set minPrice to _getData("getMinPrice.scpt")
 	set avgPrice to _getData("getAvgPrice.scpt")
 	set maxPrice to _getData("getMaxPrice.scpt")
 	
-	set theList to {tagName, longTail, searches, engagement, competition, shops, minPrice, avgPrice, maxPrice}
+	set theList to {tagName, longTail, searches, engagement, competition, shops, freeShipping, minPrice, avgPrice, maxPrice}
 	
 	return theList
-end getDomData
+end getData
+
 
 -- Get Etsy Stats from the DOM
-on getEtsyData()
-	#Prompt User for threshold setting
-	set threshold to _getData("ui_getThreshold.scpt")
-	
-	if threshold is "high" then
-		set thresholdFlag to checkFlags()
-		
-		if thresholdFlag is true then
-			set theData to getDomData()
-		else
-			return
-		end if
+on checkThreshold(a)
+	if a is true then
+		set b to getData()
+		return b
 	end if
-	
-	return theData
-end getEtsyData
+end checkThreshold
 
-getEtsyData()
-
+on saveFile(theContent, fileName)
+	set a to load_script("file_writeFile.scpt")
+	tell a to set theData to writeFile(theContent, false, fileName) as string
+end saveFile
 
 -- Process all the words from the existing text file
-on processTextFile()
-	set fileName to "/Users/nicokillips/dev/Etsy Products/Marmalead/base-keywords.txt"
-	set theList to paragraphs of (read POSIX file fileName)
+# "base-keywords.txt"
+on processTextFile(theProcessFile, theNewFile, returnType)
+	set b to load_script("file_path.scpt")
+	set c to load_script("do_setInput.scpt")
+	set d to load_script("file_writeFile.scpt")
+	set e to load_script("list_insert_item.scpt")
+	
+	set processedList to {}
+	set AppleScript's text item delimiters to ","
+	
+	tell b to set filePath to setFilePath(theProcessFile)
+	
+	set theList to paragraphs of (read POSIX file filePath)
+	
+	saveFile(rowHeaders & newLine, theNewFile) as string
 	
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
-		set theCurrentSearch to setSearchInput("q", theCurrentListItem)
 		
-		checkIfLoaded()
+		# Set the input to the current word line of the file and initiate the search
+		tell c to set theCurrentSearch to setSearchInput("q", theCurrentListItem)
 		
-		try
-			set rowData to writeFile(newLine & getEtsyData(), false)
-		on error
-			exit repeat
-		end try
+		# Wait for the page to load
+		_run("_check_loaded.scpt")
 		
+		if returnType is 1 then
+			set theData to getData() as string
+			saveFile(theData & newLine, theNewFile) as string
+		else if returnType is 2 then
+			set theData to getData()
+			tell e to insertItemInList(theData, processedList, 1)
+		end if
 	end repeat
-	return
+	
+	if returnType is 1 then
+		return
+	else if returnType is 2 then
+		return processedList as string
+	end if
 end processTextFile
 
+--
+processTextFile("base-keywords.txt", "results.csv", 1)
 
 -- Process all the words from the Word Cloud (Related Keywords)
 on processWordCloud()

@@ -143,38 +143,27 @@ on processData_fromFile(theProcessFile, newFileName, setting)
 end processData_fromFile
 
 --------------------------------------------------------
--- Process the current Word Cloud (Related Words)
+-- Process Word Cloud Items
 --------------------------------------------------------
-on process_wordCloudData(newFileName)
-	# Make a list out of the current word cloud
-	set theList to loop_iterate("querySelectorAll", "#word_cloud span", "innerText")
+(*
+	1. Read existing txt file
 	
-	# Load the input setting script for future use outside the loop
-	set c to load_script("do_setInput.scpt")
+	2. Create an empty list named "returnList"
 	
-	# Save the row headers
+	3. Set a loop for iterating through all the words
+		 (separate lines) in the txt file
 	
+	4. Read the current line from the file and insert
+		 the word into the Marmalead search input
+		 
+	5. Initiate the search
 	
-	# Start the LOOP
-	repeat with a from 1 to length of theList
-		set theCurrentListItem to item a of theList
-		
-		# Set the input to the current word line of the file and initiate the search
-		do_setInput(theCurrentListItem)
-		
-		# Wait for the page to load
-		_run("_check_loaded.scpt")
-		
-		# Get the Etsy Data
-		set theData to getData() as string
-		
-		# Write the Data to File
-		saveFile(theData & newLine, newFileName) as string
-	end repeat
-	return
-end process_wordCloudData
-
-#############################
+	6. Check that the page had loaded
+	
+	7. Get the word cloud data
+	
+	8. Insert the data into "returnList"
+*)
 
 on process_wordCloudItems_fromFile()
 	set returnList to {}

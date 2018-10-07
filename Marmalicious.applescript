@@ -103,9 +103,15 @@ on getWordCloud()
 	return b
 end getWordCloud
 
-on applyHeaders(newFileName)
+# Apply CSV Headers
+on applyCSVHeaders(newFileName)
 	saveFile(rowHeaders & newLine, newFileName) as string
-end applyHeaders
+end applyCSVHeaders
+
+# Apply Single Column Header
+on applyHeader(newFileName)
+	saveFile("Related Keyword" & newLine, newFileName) as string
+end applyHeader
 
 --------------------------------------------------------
 -- Process Data from Existing Text File

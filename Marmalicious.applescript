@@ -165,20 +165,15 @@ end processData_fromFile
 	8. Insert the data into "returnList"
 *)
 
-on process_wordCloudItems_fromFile()
-	set returnList to {}
-	set fileList to readFile("base-keywords.txt")
+on process_wordCloudItems_fromFile(baseFile)
+	set fileList to readFile(baseFile)
 	set returnList to {}
 	
 	repeat with a from 1 to length of fileList
 		set theCurrentListItem to item a of fileList
-		
 		do_setInput(theCurrentListItem)
-		
 		_run("_check_loaded.scpt")
-		
 		set w to getWordCloud()
-		
 		insertToList(w, returnList)
 	end repeat
 	

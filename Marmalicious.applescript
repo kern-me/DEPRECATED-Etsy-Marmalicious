@@ -180,6 +180,9 @@ on process_wordCloudItems_fromFile(baseFile)
 	return returnList
 end process_wordCloudItems_fromFile
 
+--------------------------------------------------------
+-- Routine: Get Related Keywords
+--------------------------------------------------------
 on routine_getRelatedKeywords(theNewFile)
 	set theData to process_wordCloudItems_fromFile()
 	set theData to theData as string

@@ -146,6 +146,8 @@ end processData_fromFile
 -- Process Word Cloud Items
 --------------------------------------------------------
 (*
+	This process gets related keywords (word clouds) for every word in an existing txt file
+	
 	1. Read existing txt file
 	
 	2. Create an empty list named "returnList"
@@ -165,20 +167,32 @@ end processData_fromFile
 	8. Insert the data into "returnList"
 *)
 
-on process_wordCloudItems_fromFile(baseFile)
+on process_wordClouds_fromFile(baseFile, newFile, setting)
 	set fileList to readFile(baseFile)
 	set returnList to {}
+	
+	if setting is 1 then
+		applyHeader(newFile)
+	end if
 	
 	repeat with a from 1 to length of fileList
 		set theCurrentListItem to item a of fileList
 		do_setInput(theCurrentListItem)
 		_run("_check_loaded.scpt")
 		set w to getWordCloud()
-		insertToList(w, returnList)
+		
+		if setting is 1 then
+			set w to w as string
+			saveFile(w & newLine, newFile) as string
+		else if setting is 2 then
+			insertToList(w, returnList)
+		end if
 	end repeat
 	
-	return returnList
-end process_wordCloudItems_fromFile
+	if setting is 2 then
+		return returnList
+	end if
+end process_wordClouds_fromFile
 
 --------------------------------------------------------
 -- Routine: Get Related Keywords
@@ -193,7 +207,4 @@ end routine_getRelatedKeywords
 --------------------------------------------------------
 -- Calls
 --------------------------------------------------------
-#set currentTag to _getData("getTagName.scpt")
-#processTextFile("related-keywords.txt", "related-keyword-data.csv", 1)
-
-processData_fromFile("words.txt", "words.csv", 2)
+process_wordClouds_fromFile("keywords.txt", "keywords-results.csv", 1)

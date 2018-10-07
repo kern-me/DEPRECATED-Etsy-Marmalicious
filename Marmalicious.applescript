@@ -13,8 +13,9 @@ property newLine : "\n"
 -- Load Script
 on load_script(_scriptName)
 	tell application "Finder"
+		set scriptsPath to "scripts:" as string
 		set _myPath to container of (path to me) as string
-		set _loadPath to (_myPath & _scriptName) as string
+		set _loadPath to (_myPath & scriptsPath & _scriptName) as string
 		load script (alias _loadPath)
 	end tell
 end load_script
@@ -40,104 +41,110 @@ on _run(_scriptName)
 	return
 end _run
 
--- Get Loop Data
+-- Get Iterative Loop Data
 on loop_iterate(a, b, c)
 	set _script to load_script("_loop.scpt")
 	tell _script to set theList to _loop_iterate(a, b, c)
 end loop_iterate
 
+-- Get Defined Loop Data
+on loop_defined(a, b)
+	set _script to load_script("_loop_defined.scpt")
+	tell _script to set theList to _loop_defined(a, b)
+end loop_defined
+
 -- Save File
 on saveFile(theContent, fileName)
 	set a to load_script("file_writeFile.scpt")
-	tell a to set theData to writeFile(theContent, false, fileName) as string
+	tell a to writeFile(theContent, false, fileName) as string
 end saveFile
 
---------------------------------------------------------
--- Get the Etsy data
---------------------------------------------------------
-on getData()
-	set tagName to _getData("getTagName.scpt")
-	set longTail to _check("#kwType > div", "span")
-	set searches to _getData("getSearches.scpt")
-	set engagement to _getData("getEngagement.scpt")
-	set competition to _getData("getCompetition.scpt")
-	set shops to _getData("getTotalShops.scpt")
-	set freeShipping to _getData("getFreeShipping.scpt")
-	set minPrice to _getData("getMinPrice.scpt")
-	set avgPrice to _getData("getAvgPrice.scpt")
-	set maxPrice to _getData("getMaxPrice.scpt")
+-- Insert into list
+on insertToList(theItem, theList)
+	set a to load_script("list_insert_item.scpt")
+	tell a to insertItemInList(theItem, theList, 1)
+end insertToList
+
+# Make List from File
+on readFile(theFile)
+	set theList to {}
+	set a to load_script("file_path.scpt")
+	set b to load_script("file_writeFile.scpt")
 	
-	set theList to {tagName, longTail, searches, engagement, competition, shops, freeShipping, minPrice, avgPrice, maxPrice}
+	# Set the file path
+	tell a to set filePath to setFilePath(theFile)
 	
+	# Set up the list by reading every paragraph line of the file
+	set theList to paragraphs of (read POSIX file filePath)
 	return theList
+end readFile
+
+--------------------------------------------------------
+-- Get Specific Data
+--------------------------------------------------------
+
+# Get the stat data
+on getData()
+	set a to load_script("getData.scpt")
+	tell a to set b to getData()
+	return b
 end getData
 
--- Get High Quality Etsy Data
-on checkThreshold(a)
-	if a is true then
-		set b to getData()
-		return b
-	end if
-end checkThreshold
+# Set the input and perform the search
+on do_setInput(theCurrentItem)
+	set a to load_script("do_setInput.scpt")
+	tell a to set theCurrentItem to setSearchInput("q", theCurrentItem)
+end do_setInput
+
+# Get Word Cloud
+on getWordCloud()
+	set a to load_script("_loop.scpt")
+	tell a to set b to _loop_iterate("querySelectorAll", "#word_cloud span", "innerText", newLine)
+	return b
+end getWordCloud
+
+on applyHeaders(newFileName)
+	saveFile(rowHeaders & newLine, newFileName) as string
+end applyHeaders
 
 --------------------------------------------------------
 -- Process Data from Existing Text File
 --------------------------------------------------------
-on processTextFile(theProcessFile, theNewFile)
-	set b to load_script("file_path.scpt")
-	set c to load_script("do_setInput.scpt")
-	set d to load_script("file_writeFile.scpt")
-	set e to load_script("list_insert_item.scpt")
-	#set processedList to {}
+
+on processTextFile(theProcessFile, theNewFile, dataSetting)
 	set AppleScript's text item delimiters to ","
 	
-	# Set the file path
-	tell b to set filePath to setFilePath(theProcessFile)
-	
-	# Set up the list by reading every paragraph line of the file
-	set theList to paragraphs of (read POSIX file filePath)
-	
-	# Save the header rows
-	saveFile(rowHeaders & newLine, theNewFile) as string
+	# Read the Existing File
+	set theList to readFile(theProcessFile)
+	set returnList to {}
 	
 	# LOOP START
+	
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
 		
 		# Set the input to the current word line of the file and initiate the search
-		tell c to set theCurrentSearch to setSearchInput("q", theCurrentListItem)
+		do_setInput(theCurrentListItem)
 		
 		# Wait for the page to load
 		_run("_check_loaded.scpt")
 		
-		(*
-		if returnType is 1 then
+		if dataSetting is 1 then
+			# Get the Etsy Data
 			set theData to getData() as string
 			saveFile(theData & newLine, theNewFile) as string
-		else if returnType is 2 then
-			set theData to getData()
-			tell e to insertItemInList(theData, processedList, 1)
+		else if dataSetting is 2 then
+			set theData to getWordCloud() as string
+			saveFile(theData & newLine, theNewFile) as string
 		end if
-		*)
-		
-		# Get the Etsy Data
-		set theData to getData() as string
-		
-		# Write the Data to file
-		saveFile(theData & newLine, theNewFile) as string
 	end repeat
 	
-	if returnType is 1 then
-		return
-	else if returnType is 2 then
-		return processedList as string
-	end if
 end processTextFile
 
 --------------------------------------------------------
 -- Process the current Word Cloud (Related Words)
 --------------------------------------------------------
-on processWordCloud(newFileName)
+on process_wordCloudData(newFileName)
 	# Make a list out of the current word cloud
 	set theList to loop_iterate("querySelectorAll", "#word_cloud span", "innerText")
 	
@@ -145,14 +152,14 @@ on processWordCloud(newFileName)
 	set c to load_script("do_setInput.scpt")
 	
 	# Save the row headers
-	saveFile(rowHeaders & newLine, newFileName) as string
+	
 	
 	# Start the LOOP
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
 		
 		# Set the input to the current word line of the file and initiate the search
-		tell c to set theCurrentSearch to setSearchInput("q", theCurrentListItem)
+		do_setInput(theCurrentListItem)
 		
 		# Wait for the page to load
 		_run("_check_loaded.scpt")
@@ -164,10 +171,44 @@ on processWordCloud(newFileName)
 		saveFile(theData & newLine, newFileName) as string
 	end repeat
 	return
-end processWordCloud
+end process_wordCloudData
+
+#############################
+
+on process_wordCloudItems_fromFile()
+	set returnList to {}
+	set fileList to readFile("base-keywords.txt")
+	set returnList to {}
+	
+	repeat with a from 1 to length of fileList
+		set theCurrentListItem to item a of fileList
+		
+		do_setInput(theCurrentListItem)
+		
+		_run("_check_loaded.scpt")
+		
+		set w to getWordCloud()
+		
+		insertToList(w, returnList)
+	end repeat
+	
+	return returnList
+end process_wordCloudItems_fromFile
+
+on routine_getRelatedKeywords(theNewFile)
+	set theData to process_wordCloudItems_fromFile()
+	set theData to theData as string
+	saveFile(theData, theNewFile) as string
+end routine_getRelatedKeywords
+
 
 --------------------------------------------------------
 -- Calls
 --------------------------------------------------------
-#processTextFile("base-keywords.txt", "base-keyword-data-results.csv", returnType)
-processWordCloud("word cloud results.csv")
+#set currentTag to _getData("getTagName.scpt")
+#processWordCloud(currentTag & ".csv")
+#processTextFile("base-keywords.txt", "word-cloud-results.csv", 2)
+#process_wordCloudItems_fromFile()
+
+#routine_getRelatedKeywords("related-keywords.csv")
+processTextFile("related-keywords.txt", "related-keyword-data.csv", 1)

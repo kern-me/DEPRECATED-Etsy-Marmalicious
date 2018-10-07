@@ -114,38 +114,33 @@ on applyHeader(newFileName)
 end applyHeader
 
 --------------------------------------------------------
--- Process Data from Existing Text File
+-- Process Data from File
 --------------------------------------------------------
-
-on processTextFile(theProcessFile, theNewFile, dataSetting)
+on processData_fromFile(theProcessFile, newFileName, setting)
 	set AppleScript's text item delimiters to ","
-	
-	# Read the Existing File
 	set theList to readFile(theProcessFile)
 	set returnList to {}
 	
-	# LOOP START
+	if setting is 1 then
+		applyCSVHeaders(newFileName)
+	else if setting is 2 then
+		applyHeader(newFileName)
+	end if
 	
 	repeat with a from 1 to length of theList
 		set theCurrentListItem to item a of theList
-		
-		# Set the input to the current word line of the file and initiate the search
 		do_setInput(theCurrentListItem)
-		
-		# Wait for the page to load
 		_run("_check_loaded.scpt")
 		
-		if dataSetting is 1 then
-			# Get the Etsy Data
+		if setting is 1 then
 			set theData to getData() as string
-			saveFile(theData & newLine, theNewFile) as string
-		else if dataSetting is 2 then
+		else if setting is 2 then
 			set theData to getWordCloud() as string
-			saveFile(theData & newLine, theNewFile) as string
 		end if
+		
+		saveFile(theData & newLine, newFileName) as string
 	end repeat
-	
-end processTextFile
+end processData_fromFile
 
 --------------------------------------------------------
 -- Process the current Word Cloud (Related Words)

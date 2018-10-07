@@ -194,9 +194,6 @@ end routine_getRelatedKeywords
 -- Calls
 --------------------------------------------------------
 #set currentTag to _getData("getTagName.scpt")
-#processWordCloud(currentTag & ".csv")
-#processTextFile("base-keywords.txt", "word-cloud-results.csv", 2)
-#process_wordCloudItems_fromFile()
+#processTextFile("related-keywords.txt", "related-keyword-data.csv", 1)
 
-#routine_getRelatedKeywords("related-keywords.csv")
-processTextFile("related-keywords.txt", "related-keyword-data.csv", 1)
+processData_fromFile("words.txt", "words.csv", 2)

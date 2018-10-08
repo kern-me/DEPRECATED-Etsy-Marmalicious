@@ -87,8 +87,9 @@ on list_remove_dupes(theList)
 	set a to load_script("list_remove_dupes.scpt")
 	tell a to list_remove_dupes(theList)
 end list_remove_dupes
+
 # Make List from File
-on readFile(theFile)
+on makeFileList(theFile)
 	set theList to {}
 	set a to load_script("file_path.scpt")
 	set b to load_script("file_writeFile.scpt")
@@ -99,7 +100,7 @@ on readFile(theFile)
 	# Set up the list by reading every paragraph line of the file
 	set theList to paragraphs of (read POSIX file filePath)
 	return theList
-end readFile
+end makeFileList
 
 --------------------------------------------------------
 -- Get Specific Data
@@ -125,6 +126,10 @@ on getWordCloud()
 	return b
 end getWordCloud
 
+--------------------------------------------------------
+-- Write Headers
+--------------------------------------------------------
+
 # Apply CSV Headers
 on applyCSVHeaders(newFileName)
 	saveFile(rowHeaders & newLine, newFileName) as string
@@ -135,12 +140,13 @@ on applyHeader(newFileName)
 	saveFile("Related Keyword" & newLine, newFileName) as string
 end applyHeader
 
+
 --------------------------------------------------------
 -- Process Data from File
 --------------------------------------------------------
 on processData_fromFile(theProcessFile, newFileName, setting)
 	set AppleScript's text item delimiters to ","
-	set theList to readFile(theProcessFile)
+	set theList to makeFileList(theProcessFile)
 	set returnList to {}
 	
 	if setting is 1 then
@@ -189,8 +195,8 @@ end processData_fromFile
 	8. Insert the data into "returnList"
 *)
 
-on process_wordClouds_fromFile(baseFile, newFile, setting)
-	set fileList to readFile(baseFile)
+on process_existing_keywords(baseFile, newFile, setting)
+	set fileList to makeFileList(baseFile)
 	set returnList to {}
 	
 	if setting is 1 then
@@ -214,13 +220,15 @@ on process_wordClouds_fromFile(baseFile, newFile, setting)
 	if setting is 2 then
 		return returnList
 	end if
-end process_wordClouds_fromFile
+end process_existing_keywords
+
 
 --------------------------------------------------------
 -- Routine: Get Related Keywords
 --------------------------------------------------------
 on routine_getRelatedKeywords(theNewFile)
 	set theData to process_wordCloudItems_fromFile()
+	list_remove_dupes(theData)
 	set theData to theData as string
 	saveFile(theData, theNewFile) as string
 end routine_getRelatedKeywords
@@ -229,4 +237,11 @@ end routine_getRelatedKeywords
 --------------------------------------------------------
 -- Calls
 --------------------------------------------------------
-process_wordClouds_fromFile("keywords.txt", "keywords-results.csv", 1)
+#processData_fromFile(baseFile, newFile, 1)
+on parse_keywordList()
+	set a to makeFileList(baseFile)
+	list_remove_dupes(a)
+end parse_keywordList
+
+process_existing_keywords(baseFile, newFile, 2)
+

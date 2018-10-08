@@ -262,16 +262,37 @@ end routine_getRelatedKeywords
 
 
 --------------------------------------------------------
+-- Routine: Get Word Clouds From User Prompt
+--------------------------------------------------------
+on get_from_prompt()
+	set a to prompt_keyword()
+	set wordCloudList to {}
+	
+	do_setInput(a)
+	_run("_check_loaded.scpt")
+	
+	set w to getWordCloud()
+	set d to getData() as string
+	
+	set fileName to a & " Related Keywords and Data.csv"
+	saveFile(rowHeaders & newLine & d & newLine, fileName) as string
+	
+	repeat with a from 1 to length of w
+		set theCurrentListItem to item a of w
+		
+		do_setInput(theCurrentListItem)
+		
+		_run("_check_loaded.scpt")
+		
+		set theData to getData() as string
+		
+		saveFile(theData & newLine, fileName) as string
+	end repeat
+end get_from_prompt
+
+
+--------------------------------------------------------
 -- Calls
 --------------------------------------------------------
-#processData_fromFile(baseFile, newFile, 1)
-on parse_keywordList()
-	set a to makeFileList(baseFile)
-	list_remove_dupes(a)
-end parse_keywordList
-
-
-prompt_keyword()
-
-
+get_from_prompt()
 

@@ -7,7 +7,8 @@ property rowHeaders : "Keyword,Longtail,Searches,Engagement,Competition,Shops Co
 
 property newLine : "\n"
 
-property baseFile : "keywords-results.csv"
+property baseUserFile : "base-user-keywords.txt"
+property baseFile : "base-keywords.csv"
 property newFile : "base-keywords-data.csv"
 
 --------------------------------------------------------
@@ -140,6 +141,13 @@ on applyHeader(newFileName)
 	saveFile("Related Keyword" & newLine, newFileName) as string
 end applyHeader
 
+--------------------------------------------------------
+-- User Prompt | Keyword
+--------------------------------------------------------
+on prompt_keyword()
+	set a to load_script("ui_keyword.scpt")
+	tell a to userKeyword()
+end prompt_keyword
 
 --------------------------------------------------------
 -- Process Data from File
@@ -195,6 +203,18 @@ end processData_fromFile
 	8. Insert the data into "returnList"
 *)
 
+--------------------------------------------------------
+-- Get related keywords for each word in existing file
+--------------------------------------------------------
+
+(* 	Setting Values:
+
+		1 - Saves the related keywords (wordcloud) for each
+				baseFile word to disk.
+		
+		2 - Inserts the related keywords (wordcloud) for each
+				baseFile word into a list then returns it. *)
+
 on process_existing_keywords(baseFile, newFile, setting)
 	set fileList to makeFileList(baseFile)
 	set returnList to {}
@@ -203,19 +223,26 @@ on process_existing_keywords(baseFile, newFile, setting)
 		applyHeader(newFile)
 	end if
 	
-	repeat with a from 1 to length of fileList
-		set theCurrentListItem to item a of fileList
-		do_setInput(theCurrentListItem)
-		_run("_check_loaded.scpt")
-		set w to getWordCloud()
+	try
+		repeat with a from 1 to length of fileList
+			set theCurrentListItem to item a of fileList
+			do_setInput(theCurrentListItem)
+			_run("_check_loaded.scpt")
+			set w to getWordCloud()
+			
+			if setting is 1 then
+				set w to w as string
+				saveFile(w & newLine, newFile) as string
+			else if setting is 2 then
+				insertToList(w, returnList)
+			end if
+		end repeat
 		
-		if setting is 1 then
-			set w to w as string
-			saveFile(w & newLine, newFile) as string
-		else if setting is 2 then
-			insertToList(w, returnList)
+	on error
+		if setting is 2 then
+			return returnList
 		end if
-	end repeat
+	end try
 	
 	if setting is 2 then
 		return returnList
@@ -243,5 +270,8 @@ on parse_keywordList()
 	list_remove_dupes(a)
 end parse_keywordList
 
-process_existing_keywords(baseFile, newFile, 2)
+
+prompt_keyword()
+
+
 

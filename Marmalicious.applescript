@@ -7,6 +7,8 @@ property rowHeaders : "Keyword,Longtail,Searches,Engagement,Competition,Shops Co
 
 property newLine : "\n"
 
+property baseFile : "keywords-results.csv"
+property newFile : "base-keywords-data.csv"
 --------------------------------------------------------
 -- Constructor Handlers
 --------------------------------------------------------

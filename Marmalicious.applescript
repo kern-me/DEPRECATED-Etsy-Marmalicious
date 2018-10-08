@@ -9,8 +9,9 @@ property newLine : "\n"
 
 property baseFile : "keywords-results.csv"
 property newFile : "base-keywords-data.csv"
+
 --------------------------------------------------------
--- Constructor Handlers
+-- General Constructor Handlers
 --------------------------------------------------------
 -- Load Script
 on load_script(_scriptName)
@@ -43,6 +44,11 @@ on _run(_scriptName)
 	return
 end _run
 
+
+--------------------------------------------------------
+-- Loop Constructor Handlers
+--------------------------------------------------------
+
 -- Get Iterative Loop Data
 on loop_iterate(a, b, c)
 	set _script to load_script("_loop.scpt")
@@ -55,11 +61,20 @@ on loop_defined(a, b)
 	tell _script to set theList to _loop_defined(a, b)
 end loop_defined
 
+--------------------------------------------------------
+-- File Read/Write Constructor Handlers
+--------------------------------------------------------
+
 -- Save File
 on saveFile(theContent, fileName)
 	set a to load_script("file_writeFile.scpt")
 	tell a to writeFile(theContent, false, fileName) as string
 end saveFile
+
+
+--------------------------------------------------------
+-- List Constructor Handlers
+--------------------------------------------------------
 
 -- Insert into list
 on insertToList(theItem, theList)

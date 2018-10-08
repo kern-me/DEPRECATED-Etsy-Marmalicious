@@ -82,6 +82,11 @@ on insertToList(theItem, theList)
 	tell a to insertItemInList(theItem, theList, 1)
 end insertToList
 
+-- Remove Duplicates from a List
+on list_remove_dupes(theList)
+	set a to load_script("list_remove_dupes.scpt")
+	tell a to list_remove_dupes(theList)
+end list_remove_dupes
 # Make List from File
 on readFile(theFile)
 	set theList to {}

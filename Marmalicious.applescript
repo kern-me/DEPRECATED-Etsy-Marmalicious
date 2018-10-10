@@ -170,11 +170,16 @@ on processData_fromFile(theProcessFile, newFileName, setting)
 		
 		if setting is 1 then
 			set theData to getData() as string
+			if theData is not false then
+				saveFile(theData & newLine, newFileName) as string
+			end if
+			
 		else if setting is 2 then
 			set theData to getWordCloud() as string
+			if theData is not false then
+				saveFile(theData & newLine, newFileName) as string
+			end if
 		end if
-		
-		saveFile(theData & newLine, newFileName) as string
 	end repeat
 end processData_fromFile
 
@@ -264,29 +269,50 @@ end routine_getRelatedKeywords
 --------------------------------------------------------
 -- Routine: Get Word Clouds From User Prompt
 --------------------------------------------------------
+on step_keyword()
+	set theKeyword to prompt_keyword()
+	do_setInput(theKeyword)
+	return theKeyword
+end step_keyword
+
+--
+
+on step_fileSetup(theKeyword)
+	set fileName to theKeyword & ".csv"
+	saveFile(rowHeaders & newLine, fileName) as string
+	return fileName
+end step_fileSetup
+
+--
+
+on check_data_quality(fileName)
+	set d to getData() as string
+	
+	if d is not "false" then
+		saveFile(d & newLine, fileName) as string
+	end if
+end check_data_quality
+
+--
+
 on get_from_prompt()
-	set a to prompt_keyword()
+	set theKeyword to step_keyword()
+	set fileName to step_fileSetup(theKeyword)
 	set wordCloudList to {}
 	
-	do_setInput(a)
 	_run("_check_loaded.scpt")
 	
 	set w to getWordCloud()
-	set d to getData() as string
 	
-	set fileName to a & " Related Keywords and Data.csv"
-	saveFile(rowHeaders & newLine & d & newLine, fileName) as string
+	check_data_quality(fileName)
 	
 	repeat with a from 1 to length of w
 		set theCurrentListItem to item a of w
 		
 		do_setInput(theCurrentListItem)
-		
 		_run("_check_loaded.scpt")
 		
-		set theData to getData() as string
-		
-		saveFile(theData & newLine, fileName) as string
+		check_data_quality(fileName)
 	end repeat
 end get_from_prompt
 

@@ -345,7 +345,4 @@ end userPathSelection
 ##############################################################
 # CALLS
 ##############################################################
-get_from_prompt()
-#processData_fromFile("base-words.txt", "zelda perler art longtail data.csv")
-#process_existing_keywords("base-words.txt", "results.csv")
-
+userPathSelection()

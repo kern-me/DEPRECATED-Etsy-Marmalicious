@@ -222,27 +222,29 @@ on processData_fromFile(theProcessFile, newFileName)
 	
 	set AppleScript's text item delimiters to ","
 	
-	# Read existing txt file
 	set theList to makeFileList(theProcessFile)
 	
-	# Create an empty list named "returnList"
+	set wordCount to length of theList
+	set progress total steps to wordCount
+	set progress completed steps to 0
+	set progress description to "Processing Keyword Data..."
+	set progress additional description to "Preparing to process."
+	
 	set returnList to {}
 	
-	# Set a loop for iterating through all the words (separate lines) in the txt file
 	repeat with a from 1 to length of theList
-		
-		# Read the current line from the file
+		set progress additional description to "Processing keyword " & a & " of " & wordCount
 		set theCurrentListItem to item a of theList
-		
-		# Insert the word into the Marmalead search input and initiate the search
 		setInput(theCurrentListItem)
-		
-		# Wait for the page to load
 		check_pageLoad()
-		
-		# Find the data and filter by quality
 		check_data_quality(newFileName)
 	end repeat
+	
+	# Reset the progress information
+	set progress total steps to 0
+	set progress completed steps to 0
+	set progress description to ""
+	set progress additional description to ""
 end processData_fromFile
 
 ##############################################################

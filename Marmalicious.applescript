@@ -111,6 +111,17 @@ on makeFileList(theFile)
 	return theList
 end makeFileList
 
+##############################################################
+# HANDLERS - UI Prompts
+##############################################################
+
+# User Prompt
+on prompt(theText, buttonText1, buttonText2, buttonText3)
+	set a to load_script("ui_prompts.scpt")
+	tell a
+		userPrompt3(theText, buttonText1, buttonText2, buttonText3)
+	end tell
+end prompt
 
 ##############################################################
 # DATA ROUTINES
@@ -298,6 +309,24 @@ on get_from_prompt()
 	
 	return "Finished."
 end get_from_prompt
+
+on userPathSelection()
+	set i to "Choose an action."
+	set a to 1
+	set b to 2
+	set c to 3
+	
+	set choice to button returned of prompt(i, a, b, c) as number
+	
+	if choice is 1 then
+		processData_fromFile("related-keywords_2.txt", "related-keywords-data.csv")
+	else if choice is 2 then
+		process_existing_keywords("base-words.txt", "results.csv")
+	else if choice is 3 then
+		get_from_prompt()
+	end if
+end userPathSelection
+
 
 
 ##############################################################

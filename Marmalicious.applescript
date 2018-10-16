@@ -254,8 +254,15 @@ on process_existing_keywords(baseFile, newFile)
 	saveFile("Related Keywords" & newLine, newFile) as string
 	set fileList to makeFileList(baseFile)
 	
+	set wordCount to length of fileList
+	set progress total steps to wordCount
+	set progress completed steps to 0
+	set progress description to "Processing Related Keywords..."
+	set progress additional description to "Preparing to process."
+	
 	
 	repeat with a from 1 to length of fileList
+		set progress additional description to "Processing keyword " & a & " of " & wordCount
 		set theCurrentListItem to item a of fileList
 		set returnList to {}
 		setInput(theCurrentListItem)
@@ -264,7 +271,16 @@ on process_existing_keywords(baseFile, newFile)
 		set theData to getWordCloud() as string
 		
 		saveFile(theData & newLine, newFile) as string
+		set progress completed steps to a
 	end repeat
+	
+	# Reset the progress information
+	set progress total steps to 0
+	set progress completed steps to 0
+	set progress description to ""
+	set progress additional description to ""
+	
+	return "Finished."
 end process_existing_keywords
 
 

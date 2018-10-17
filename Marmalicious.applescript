@@ -230,14 +230,13 @@ on processData_fromFile(theProcessFile, newFileName)
 	set progress description to "Processing Keyword Data..."
 	set progress additional description to "Preparing to process."
 	
-	set returnList to {}
-	
 	repeat with a from 1 to length of theList
 		set progress additional description to "Processing keyword " & a & " of " & wordCount
 		set theCurrentListItem to item a of theList
 		setInput(theCurrentListItem)
 		check_pageLoad()
 		check_data_quality(newFileName)
+		set progress completed steps to a
 	end repeat
 	
 	# Reset the progress information
@@ -294,6 +293,7 @@ on get_from_prompt()
 	check_pageLoad()
 	
 	set w to getWordCloud()
+	saveFile(w & newLine, "related-keywords.csv") as string
 	
 	set wordCount to length of w
 	set progress total steps to wordCount
@@ -332,7 +332,7 @@ on userPathSelection()
 	set choice to button returned of prompt(i, a, b, c) as number
 	
 	if choice is 1 then
-		processData_fromFile("related-keywords_2.txt", "related-keywords-data.csv")
+		processData_fromFile("output.txt", "output-data.csv")
 	else if choice is 2 then
 		process_existing_keywords("base-words.txt", "results.csv")
 	else if choice is 3 then

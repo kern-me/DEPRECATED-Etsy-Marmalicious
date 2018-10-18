@@ -12,6 +12,9 @@ property baseUserFile : "base-user-keywords.txt"
 property baseFile : "base-keywords.csv"
 property newFile : "base-keywords-data.csv"
 
+property outputFile_related_keywords : "_related_keywords.csv"
+property outputFile_data : "output_data.csv"
+
 ##############################################################
 # HANDLERS - General Constructors
 ##############################################################
@@ -286,6 +289,7 @@ end process_existing_keywords
 ##############################################################
 # ROUTINE: Get Word Clouds From User Prompt
 ##############################################################
+
 on get_from_prompt()
 	set theKeyword to step_keyword()
 	set fileName to step_fileSetup(theKeyword)
@@ -293,14 +297,18 @@ on get_from_prompt()
 	check_pageLoad()
 	
 	set w to getWordCloud()
-	saveFile(w & newLine, "related-keywords.csv") as string
 	
 	set wordCount to length of w
+	
 	set progress total steps to wordCount
 	set progress completed steps to 0
 	set progress description to "Processing Keywords..."
 	set progress additional description to "Preparing to process."
 	
+	# Write wordcount and related keywords to file
+	saveFile("'" & theKeyword & "' " & "has: " & wordCount & " related keywords" & newLine & w & newLine, theKeyword & outputFile_related_keywords) as string
+	
+	# Check data quality of initial keyword inquiry and write to data output file
 	check_data_quality(fileName)
 	
 	repeat with a from 1 to length of w

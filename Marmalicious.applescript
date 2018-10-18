@@ -217,6 +217,12 @@ on check_pageLoad()
 end check_pageLoad
 
 
+on check_results()
+	set _script to load_script("_check_results.scpt")
+	tell _script to set a to check_results()
+	return a
+end check_results
+
 ##############################################################
 # ROUTINE: Process Data from File
 ##############################################################
@@ -238,7 +244,13 @@ on processData_fromFile(theProcessFile, newFileName)
 		set theCurrentListItem to item a of theList
 		setInput(theCurrentListItem)
 		check_pageLoad()
-		check_data_quality(newFileName)
+		
+		if check_results() is false then
+			log "Keyword has no results. Moving to the next one."
+		else
+			check_data_quality(newFileName)
+		end if
+		
 		set progress completed steps to a
 	end repeat
 	
@@ -270,9 +282,13 @@ on process_existing_keywords(baseFile, newFile)
 		setInput(theCurrentListItem)
 		
 		check_pageLoad()
-		set theData to getWordCloud() as string
 		
-		saveFile(theData & newLine, newFile) as string
+		if check_results() is false then
+			log "Keyword has no results. Moving to the next one."
+		else
+			set theData to getWordCloud() as string
+			saveFile(theData & newLine, newFile) as string
+		end if
 		set progress completed steps to a
 	end repeat
 	
@@ -291,10 +307,17 @@ end process_existing_keywords
 ##############################################################
 
 on get_from_prompt()
-	set theKeyword to step_keyword()
-	set fileName to step_fileSetup(theKeyword)
+	repeat
+		set theKeyword to step_keyword()
+		
+		check_pageLoad()
+		
+		if check_results() is true then
+			exit repeat
+		end if
+	end repeat
 	
-	check_pageLoad()
+	set fileName to step_fileSetup(theKeyword)
 	
 	set w to getWordCloud()
 	
@@ -331,6 +354,8 @@ on get_from_prompt()
 	return "Finished."
 end get_from_prompt
 
+#######################
+
 on userPathSelection()
 	set i to "Choose an action."
 	set a to 1
@@ -354,3 +379,5 @@ end userPathSelection
 # CALLS
 ##############################################################
 userPathSelection()
+
+
